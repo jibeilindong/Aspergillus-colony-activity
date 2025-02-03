@@ -6,7 +6,7 @@ library("paletteer")
 
 img_format <- c("svg","pdf")
 
-folderpath <- "/Users/chenrongze/Myprogrames/2_PFSup/制曲阶段-原始数据+结果"
+folderpath <- "---"
 outpath <- func_initialization(folderpath, output_folder = "output")
 Name_group <- c("group_strain", "conc", "time") #, "group_conc", "group_time"
 
@@ -25,15 +25,10 @@ spc_reor_filt <- pre_reorganize(spc_reor_filt,meta_filt)
 
 ##################### 3. data clean & QC
 spc_reor_filt_qc <- cal_QC(spc_reor_filt)
-# plot_QC(spc_reor_filt_qc,outpath,"QC_ori")
 
 spc_qc_good <- spc_reor_filt_qc %>% filter(Pre_Noise_mean < 0.1, Pre_Noise_sd < 0.1,
                                            Pre_Signal_max > 0.1, Pre_Signal_max < 1.2,
                                            Ori_Intensity_max < 65500,Ori_Intensity_min >= -2500) #
-
-# spc_qc_good <- spc_reor_filt_qc %>% filter(Noise_mean < 0.03, Noise_sd < 0.03,
-#                                            Signal_max > 0.1, Signal_max < 1.2,
-#                                            Intensity_max < 65500, Intensity_min >= -2500) #
 
 spc_good <- spc_reor_filt %>% filter(filename %in% spc_qc_good$filename)
 hs_ori <- unique(spc_good[,c(TRUE,!duplicated(as.numeric(colnames(spc_reor_filt[,-1]))))])
@@ -50,15 +45,6 @@ outpath_files <- func_initialization(outpath, output_folder = "files")
 fwrite(hs_pre, paste(outpath_files, "/alldata_pre", ".txt", sep = ""),
        row.names = F, col.names = T, quote = F, sep = "\t")
 
-# spc_reor_filt_qc <- cal_QC(hs_pre)
-# plot_QC(spc_reor_filt_qc,outpath,"QC_pre",
-#         A = 0.03,B = 0.03,C = 1,
-#         D = 0.1, E = 0, F = 0.5)
-# 
-# spc_melt_all <- plot_func_allspc(hs_pre,hs_meta)
-# plot_allspc(spc_melt_all,outpath,"pre_all_spc_03")
-# spc_melt_summary <- plot_func_spcgroup(hs_pre,hs_meta,labels = c("Group"))
-# plot_Meanspc(spc_melt_summary,0.1,outpath,"pre_Mean_spc_03")
 
 hs_CD_ratio <- cal_CDR(hs_pre,hs_meta)
 fwrite(hs_CD_ratio, paste(outpath_files, "/CDR_groups", ".txt", sep = ""),
@@ -68,7 +54,7 @@ outpath_files <- func_initialization(outpath, output_folder = "files")
 
 hs_CD_ratio <- fread(paste(outpath_files, "/CDR_groups.txt", sep = ""), header = TRUE, sep = "\t")
 hs_pre <- fread(paste(outpath_files, "/alldata_pre.txt", sep = ""), header = TRUE, sep = "\t")
-hs_meta_1 <- hs_CD_ratio %>% filter(group_strain %in% c("FQ1","FQ2","FQ3","FQ4"))
+hs_meta_1 <- hs_CD_ratio %>% filter(group_strain %in% c("S1","S2","S3","S4"))
 hs_pre_1 <- hs_pre %>% filter(filename %in% hs_meta_1$filename)
 
 set.seed(50) #44 
@@ -92,7 +78,7 @@ color_YLGn_props <- colorRampPalette(rev(brewer.pal(1,"YlGn")))
 data.umap$CD_ratio <- as.numeric(as.character(data.umap$CD_ratio))
 inds <- data.umap_FQ$filename
 
-data.umap_FQ <- data.umap %>% filter(group_strain %in% c("FQ1","FQ2","FQ3","FQ4"))
+data.umap_FQ <- data.umap %>% filter(group_strain %in% c("S1","S2","S3","S4"))
 data.umap_FQ$filename <- factor(data.umap_FQ$filename,levels = inds)
 umap_plot <- ggplot(data.umap_FQ, aes(UMAP_1, UMAP_2,group = group_strain,color = CD_ratio)) + 
   geom_point(size=1) + theme_bw() + 
@@ -120,60 +106,6 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_all-0424.svg", sep=""),plot=umap
 # p
 # htmlwidgets::saveWidget(as_widget(p), "graphU.html")
 
-# data.umap_JP <- data.umap %>% filter(group_strain %in% c("JP1","JP2"))
-# umap_plot <- ggplot(data.umap_JP, aes(UMAP_1, UMAP_2,color = CD_ratio)) + 
-#   geom_point(size=1,alpha = 0.3) + theme_bw() + 
-#   #scale_colour_gradientn(colours = color_pigment_props,guide = "colourbar") +
-#   theme(panel.grid = element_blank(), 
-#         panel.grid.minor = element_blank(), 
-#         axis.text.x = element_text(size = 15, angle = 0), 
-#         axis.text.y = element_text(size = 15), 
-#         axis.ticks = element_line(linewidth  = 1), 
-#         axis.ticks.length = unit(0.4, "lines"), 
-#         axis.title = element_text(size = 15))
-# umap_plot
-
-# #### 光谱分布情况 FigB 
-# hs_pre_melt <- melt(hs_pre_1,id.vars = c("filename"),variable.name = "wavenumber",value.name = "value")
-# RICH_data_wavenumber <- sort(unique(hs_pre_melt$wavenumber))
-# 
-# hs_CD_ratio <- hs_CD_ratio %>% 
-#   arrange(CD_range, P_range, X_range)
-# 
-# hs_pre_melt$filename <- factor(hs_pre_melt$filename,levels = hs_CD_ratio$filename[!duplicated(hs_CD_ratio$filename)])
-# hs_pre_melt <- left_join(hs_pre_melt,hs_CD_ratio,by = "filename")
-# 
-# color_pigment_props <- c("white","#f0f7f2","lightgrey","#4575B4",
-#                          "#74ADD1","#1e592b","#B2DF8A","#FEE090",
-#                          "#FDAE61","#F46D43","#dc3e32","#A50026")
-# 
-# myPal <- colorRampPalette(color_pigment_props)(n=1000)
-# 
-# for( i in levels(factor(hs_pre_melt$group_strain)))
-# {
-#   hs_pre_melt_i <- hs_pre_melt %>% filter(group_strain == i)
-#   hs_pre_melt_i <- hs_pre_melt_i %>% 
-#     arrange(CD_range, P_range, X_range)
-#   hs_pre_melt_i$filename <- factor(hs_pre_melt_i$filename,levels = hs_pre_melt_i$filename[!duplicated(hs_pre_melt_i$filename)])
-#   
-#   plot_tile_i <- ggplot(hs_pre_melt_i, aes(x=factor(wavenumber), y=filename, fill=value)) +
-#     geom_tile() + theme_bw() + coord_equal(ratio = 0.1) +
-#     scale_x_discrete(breaks = RICH_data_wavenumber[seq(1,1259,30)]) +
-#     scale_fill_gradientn(colours =myPal) +
-#     facet_grid(. ~group_strain) + 
-#     default_theme() +
-#     theme(
-#       legend.key.width = unit(10,"pt"),
-#       legend.key.height = unit(50, "pt"),
-#       axis.ticks = element_blank(),
-#       axis.title = element_blank(),
-#       axis.text.x = element_text(size = 10,angle = 45,hjust = 1,vjust =1),
-#       axis.text.y = element_blank(),
-#       axis.text = element_text())
-#   ggsave(filename=paste(outpath,"/","plot_tile_",i,".png", sep=""),plot=plot_tile_i,
-#          limitsize=T,width = 15,height = 20)
-# }
-
 
 
 #### FigA_2 
@@ -181,9 +113,9 @@ color_hetero_props <- c("#1f4047","#1e592b","#8c9976","#adbd95","#c4d18c",
                         "#f1cd9b","#f6b654","#f0634a","#dc3e32","#a73436")
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ2"|
-                                data.umap_FQ_1$group_strain == "FQ3"|
-                                data.umap_FQ_1$group_strain == "FQ4")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S2"|
+                                data.umap_FQ_1$group_strain == "S3"|
+                                data.umap_FQ_1$group_strain == "S4")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -207,9 +139,9 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_1-0424.svg", sep=""),plot=umap_p
 
 #### FigA_2 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ1"|
-                                data.umap_FQ_1$group_strain == "FQ3"|
-                                data.umap_FQ_1$group_strain == "FQ4")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S1"|
+                                data.umap_FQ_1$group_strain == "S3"|
+                                data.umap_FQ_1$group_strain == "S4")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -231,9 +163,9 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_2-0424.svg", sep=""),plot=umap_p
        limitsize=F,width = 7,height = 6)
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ1"|
-                                data.umap_FQ_1$group_strain == "FQ2"|
-                                data.umap_FQ_1$group_strain == "FQ4")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S1"|
+                                data.umap_FQ_1$group_strain == "S2"|
+                                data.umap_FQ_1$group_strain == "S4")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -255,9 +187,9 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_3-0424.svg", sep=""),plot=umap_p
        limitsize=F,width = 7,height = 6)
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ1"|
-                                data.umap_FQ_1$group_strain == "FQ2"|
-                                data.umap_FQ_1$group_strain == "FQ3")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S1"|
+                                data.umap_FQ_1$group_strain == "S2"|
+                                data.umap_FQ_1$group_strain == "S3")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -279,7 +211,7 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_4-0424.svg", sep=""),plot=umap_p
        limitsize=F,width = 7,height = 6)
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ2"|data.umap_FQ_1$group_strain == "FQ3")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S2"|data.umap_FQ_1$group_strain == "S3")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -301,7 +233,7 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_14.svg", sep=""),plot=umap_plot,
        limitsize=F,width = 7,height = 6)
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ2"|data.umap_FQ_1$group_strain == "FQ4")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S2"|data.umap_FQ_1$group_strain == "S4")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -323,7 +255,7 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_13.svg", sep=""),plot=umap_plot,
        limitsize=F,width = 7,height = 6)
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ3"|data.umap_FQ_1$group_strain == "FQ4")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S3"|data.umap_FQ_1$group_strain == "S4")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -345,7 +277,7 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_12.svg", sep=""),plot=umap_plot,
        limitsize=F,width = 7,height = 6)
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ1"|data.umap_FQ_1$group_strain == "FQ2")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S1"|data.umap_FQ_1$group_strain == "S2")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -368,7 +300,7 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_34.svg", sep=""),plot=umap_plot,
 
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ1"|data.umap_FQ_1$group_strain == "FQ4")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S1"|data.umap_FQ_1$group_strain == "S4")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
@@ -391,7 +323,7 @@ ggsave(filename=paste(outpath,"/","plotpoint_FQ_23.svg", sep=""),plot=umap_plot,
 
 
 data.umap_FQ_1 <- data.umap_FQ
-data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "FQ1"|data.umap_FQ_1$group_strain == "FQ3")] <- NA
+data.umap_FQ_1$CD_ratio[which(data.umap_FQ_1$group_strain == "S1"|data.umap_FQ_1$group_strain == "S3")] <- NA
 data.umap_FQ_1 <- data.umap_FQ_1[sort(order(data.umap_FQ_1$CD_ratio,decreasing = TRUE),decreasing = TRUE),]
 data.umap_FQ_1$filename <- factor(data.umap_FQ_1$filename,levels = inds)
 
